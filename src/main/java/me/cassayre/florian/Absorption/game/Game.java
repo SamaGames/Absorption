@@ -2,18 +2,23 @@ package me.cassayre.florian.Absorption.game;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import me.cassayre.florian.Absorption.Absorption;
 import me.cassayre.florian.Absorption.block.ArenaBlock;
 import me.cassayre.florian.Absorption.team.TeamColor;
 import me.cassayre.florian.Absorption.utils.Utils;
+import me.cassayre.florian.Absorption.weapon.SplatChargerKit;
+import net.md_5.bungee.api.ChatColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
@@ -21,16 +26,21 @@ public class Game {
 
 	private final Map<UUID, GamePlayer> players = new HashMap<>();
 	
-	private final Block BLOCK1 = null;
-	private final Block BLOCK2 = null;
+	private final World WORLD = Bukkit.getWorlds().get(0);
+	
+	private final Block BLOCK1 = new Location(WORLD, 10, 64, 56).getBlock();
+	private final Block BLOCK2 = new Location(WORLD, 35, 70, 42).getBlock();
+	
 	private final Map<Block, ArenaBlock> blocks = new HashMap<>();
 	
 	private final List<Material> PAINTABLE_BLOCKS = Arrays.asList(Material.WOOL);
 	
-	private final Location PURPLE_SPAWN = null;
-	private final Location ORANGE_SPAWN = null;
-	private final Location GREEN_SPAWN = null;
-	private final Location BLUE_SPAWN = null;
+	private final Location PURPLE_SPAWN = new Location(WORLD, 32, 65, 50);
+	private final Location ORANGE_SPAWN = new Location(WORLD, 32, 65, 50);
+	private final Location GREEN_SPAWN = new Location(WORLD, 32, 65, 50);
+	private final Location BLUE_SPAWN = new Location(WORLD, 32, 65, 50);
+	
+	private boolean started = false;
 	
 	public Game() {
 		Bukkit.getLogger().info("Loading blocks in main thread. Players shouldn't join now. Parsing " + Utils.countBlocks(BLOCK1, BLOCK2) + " objects...");
@@ -42,12 +52,16 @@ public class Game {
 					Block block = BLOCK1.getWorld().getBlockAt(x, y, z);
 					if(PAINTABLE_BLOCKS.contains(block.getType())) {
 						blocks.put(block, new ArenaBlock(x, y, z));
+						if(block.getType() == Material.WOOL)
+							block.setData((byte) 0);
 					}
 				}
 			}
 		}
 		
 		Bukkit.getLogger().info(blocks.values().size() + " blocks loaded out of " + Utils.countBlocks(BLOCK1, BLOCK2) + " in " + (System.currentTimeMillis() - time) + "ms");
+		
+		Bukkit.getScheduler().runTaskTimer(Absorption.get(), new RegenerationLoop(), 5 * 20, 5 * 20);
 	}
 	
 	/**
@@ -95,6 +109,51 @@ public class Game {
 	}
 	
 	/**
+	 * Should be called to start the game.
+	 */
+	public void start() {
+		started = true;
+		
+		Bukkit.broadcastMessage(ChatColor.GREEN + "A vos rouleaux, prêts, peignez !");
+		
+		Collections.shuffle(getPlayers());
+		
+		for(GamePlayer player : getPlayers()) {
+			if(player.getTeamColor() != null) continue;
+			TeamColor.addSomewhere(player);
+			player.getPlayer().sendMessage(ChatColor.GREEN + "Vous avez été placé dans l'équipe " + player.getTeamColor().getColor() + "" + ChatColor.BOLD + player.getTeamColor().getName());
+		}
+		
+		for(GamePlayer player : getPlayers()) {
+			switch(player.getTeamColor()) {
+			case PURPLE :
+				player.getPlayer().teleport(PURPLE_SPAWN);
+				break;
+			case ORANGE :
+				player.getPlayer().teleport(ORANGE_SPAWN);
+				break;
+			case GREEN :
+				player.getPlayer().teleport(GREEN_SPAWN);
+				break;
+			case BLUE :
+				player.getPlayer().teleport(BLUE_SPAWN);
+				break;
+			}
+			
+			player.setState(PlayerState.PLAYING);
+			
+			// TODO random kit (or kit that is in minority)
+			if(player.getKit() == null) {
+				player.setKit(new SplatChargerKit());
+				player.getPlayer().sendMessage(ChatColor.GREEN + "Nous vous avons attribué l'arme " + player.getKit().getName());
+			}
+			
+			player.fillPlayingInventory();
+		}
+		
+	}
+	
+	/**
 	 * Paints the block using a team color.
 	 * If TeamColor is null, the block will come back to its original state.
 	 * Unknown blocks safe.
@@ -110,6 +169,30 @@ public class Game {
 			return true;
 		}
 		return false;
+	}
+	
+	public void paintSphere(Location center, GamePlayer player, TeamColor color, double radius, boolean jitter) {
+		if(jitter)
+			radius += 0.75;
+		
+		for(int x = (int) -Math.ceil(radius); x <= (int) Math.ceil(radius); x++) {
+			for(int y = (int) -Math.ceil(radius); y <= (int) Math.ceil(radius); y++) {
+				for(int z = (int) -Math.ceil(radius); z <= (int) Math.ceil(radius); z++) {
+					if(!jitter) {
+						if(center.clone().add(x, y, z).distance(center) < radius) {
+							System.out.println(center.clone().add(x, y, z).distance(center) + " " + radius);
+							if(Absorption.get().getGame().paintBlock(center.clone().add(x, y, z).getBlock(), color))
+								player.increaseBlocksPainted();
+						}
+					} else {
+						if(center.clone().add(x, y, z).distance(center) < radius - 0.75 || (center.clone().add(x, y, z).distance(center) < radius && Math.random() >= 0.75)) {
+							if(Absorption.get().getGame().paintBlock(center.clone().add(x, y, z).getBlock(), color))
+								player.increaseBlocksPainted();
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	/**
@@ -161,5 +244,9 @@ public class Game {
 	
 	public int getMaxPlayers() {
 		return 16;
+	}
+	
+	public boolean hasStarted() {
+		return started;
 	}
 }

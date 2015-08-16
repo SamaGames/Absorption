@@ -5,29 +5,32 @@ import java.util.List;
 
 import me.cassayre.florian.Absorption.Absorption;
 import me.cassayre.florian.Absorption.game.GamePlayer;
+import me.cassayre.florian.Absorption.utils.ParticleEffect;
 
 import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 
 public enum TeamColor {
-	PURPLE("Violet", ChatColor.DARK_PURPLE, Material.WOOL, DyeColor.PURPLE.getData()),
-	ORANGE("Orange", ChatColor.GOLD, Material.WOOL, DyeColor.ORANGE.getData()),
-	GREEN("Vert", ChatColor.GREEN, Material.WOOL, DyeColor.GREEN.getData()),
-	BLUE("Bleu", ChatColor.DARK_BLUE, Material.WOOL, DyeColor.BLUE.getData());
+	PURPLE("Violet", ChatColor.DARK_PURPLE, Material.WOOL, DyeColor.PURPLE.getData(), new ParticleEffect.OrdinaryColor(100, 5, 200)),
+	ORANGE("Orange", ChatColor.GOLD, Material.WOOL, DyeColor.ORANGE.getData(), new ParticleEffect.OrdinaryColor(255, 115, 0)),
+	GREEN("Vert", ChatColor.GREEN, Material.WOOL, DyeColor.GREEN.getData(), new ParticleEffect.OrdinaryColor(15, 200, 30)),
+	BLUE("Bleu", ChatColor.DARK_BLUE, Material.WOOL, DyeColor.BLUE.getData(), new ParticleEffect.OrdinaryColor(0, 100, 255));
 	
 	private final String NAME;
 	private final ChatColor COLOR;
 	private final Material MATERIAL;
 	private final int DATA;
+	private final ParticleEffect.ParticleColor PARTICLE_COLOR;
 	
 	private List<GamePlayer> members = new ArrayList<>();
 	
-	private TeamColor(String name, ChatColor color, Material material, int data) {
+	private TeamColor(String name, ChatColor color, Material material, int data, ParticleEffect.ParticleColor particleColor) {
 		NAME = name;
 		COLOR = color;
 		MATERIAL = material;
 		DATA = data;
+		PARTICLE_COLOR = particleColor;
 	}
 
 	public String getName() {
@@ -58,6 +61,10 @@ public enum TeamColor {
 		members.remove(player);
 	}
 	
+	public int getSize() {
+		return members.size();
+	}
+	
 	public boolean contains(GamePlayer player) {
 		return members.contains(player);
 	}
@@ -73,5 +80,18 @@ public enum TeamColor {
 		if(BLUE.contains(player))
 			team = BLUE;
 		return team;
+	}
+	
+	public static void addSomewhere(GamePlayer player) {
+		TeamColor best = TeamColor.PURPLE;
+		if(TeamColor.ORANGE.getSize() < best.getSize()) best = TeamColor.ORANGE;
+		if(TeamColor.GREEN.getSize() < best.getSize()) best = TeamColor.GREEN;
+		if(TeamColor.BLUE.getSize() < best.getSize()) best = TeamColor.BLUE;
+		
+		best.addMember(player);
+	}
+	
+	public ParticleEffect.ParticleColor getParticleColor() {
+		return PARTICLE_COLOR;
 	}
 }

@@ -1,13 +1,13 @@
 package me.cassayre.florian.Absorption.block;
 
+import me.cassayre.florian.Absorption.team.TeamColor;
+import me.cassayre.florian.Absorption.utils.ParticleEffect;
+
 import org.bukkit.Bukkit;
+import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.util.Vector;
-
-import me.cassayre.florian.Absorption.team.TeamColor;
-import me.cassayre.florian.Absorption.utils.ParticleEffect;
 
 public class ArenaBlock {
 
@@ -50,9 +50,10 @@ public class ArenaBlock {
 		BLOCK.setType(color.getMaterial());
 		BLOCK.setData((byte) color.getData());
 		
-		// TODO Improvements to do in effects
-		ParticleEffect.WATER_WAKE.display(new Vector(0, Math.random(), 0), 1, BLOCK.getLocation().add(0, 1, 0), 1);
-		ParticleEffect.CLOUD.display(new ParticleEffect.OrdinaryColor(255, 0, 255), BLOCK.getLocation().add(0, 1, 0), 1);
+		// TODO Improvements to do in effects (ae: effects on block sides)
+		BLOCK.getWorld().playEffect(BLOCK.getLocation().add(Math.random(), 1, Math.random()), Effect.SPLASH, 0);
+		for(int i = 0; i < 5; i++)
+			ParticleEffect.REDSTONE.display(color.getParticleColor(), BLOCK.getLocation().add(Math.random(), 1, Math.random()), 20);
 	}
 	
 	public void restoreBlock() {

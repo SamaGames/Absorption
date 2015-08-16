@@ -17,7 +17,7 @@ public abstract class SecondaryPlayerWeapon extends BasicItem {
 	
 	@Override
 	public void onRightClick(GamePlayer player) {
-		if(player.buyWithInk(PRICE)) {
+		if(player.consumeInk(PRICE)) {
 			player.getPlayer().sendMessage(ChatColor.AQUA + "Vous dépensez " + ChatColor.GOLD + PRICE + ChatColor.AQUA + " encre" + (PRICE > 1 ? "s" : "") + " pour utiliser " + ChatColor.RED + NAME + ChatColor.AQUA + " !");
 			onUse(player);
 		}

@@ -1,4 +1,9 @@
 name: Absorption
-description: Absorption
+description: Splatoon sur minecraft !
 main: me.cassayre.florian.Absorption.Absorption
 version: 0.1
+
+
+
+commands:
+  start:
